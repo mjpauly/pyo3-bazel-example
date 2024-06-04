@@ -37,6 +37,22 @@ annotations = {
 },
 ```
 
+We provide CcInfo to PyO3 from the hermetic Python toolchain by having the
+`rust_shared_library` depend on `"@rules_python//python/cc:current_py_cc_libs"`.
+
+```starlark
+rust_shared_library(
+    name = "word_count_rs",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//word_count:__pkg__"],
+    deps = [
+        "@crate_index//:pyo3",
+        "@crate_index//:rayon",
+        "@rules_python//python/cc:current_py_cc_libs",
+    ],
+)
+```
+
 We can verify that PyO3 detected the environment correctly by looking at the config file
 produced by the build script in the `OUT_DIR`.
 `bazel-out/darwin_arm64-opt-exec-(...)/bin/external/crates_vendor__pyo3-build-config-0.19.2/pyo3-build-config_build_script.out_dir/pyo3-build-config.txt`

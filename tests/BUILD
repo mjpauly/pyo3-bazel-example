@@ -9,4 +9,5 @@ py_test(
         requirement("pytest"),
         requirement("pytest-benchmark"),
     ],
+    size = "small",
 )

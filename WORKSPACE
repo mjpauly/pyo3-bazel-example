@@ -3,10 +3,11 @@ workspace(name = "pyo3-bazel-example")
 ########## Rust
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+# 0.43.0 doesn't work on bazel 6: "CARGO_MANIFEST_DIR not set"
 http_archive(
     name = "rules_rust",
-    sha256 = "c46bdafc582d9bd48a6f97000d05af4829f62d5fee10a2a3edddf2f3d9a232c1",
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.28.0/rules_rust-v0.28.0.tar.gz"],
+    integrity = "sha256-JLN47ZcAbx9wEr5Jiib4HduZATGLiDgK7oUi/fvotzU=",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.42.1/rules_rust-v0.42.1.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
@@ -21,20 +22,46 @@ load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencie
 
 crate_universe_dependencies()
 
-load(
-    "//3rdparty/crates:crates.bzl",
-    "crate_repositories",
+load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository", "render_config", "splicing_config")
+
+crates_repository(
+    name = "crate_index",
+    cargo_lockfile = "//:Cargo.lock",
+    lockfile = "//:Cargo.Bazel.lock",
+    annotations = {
+        "pyo3-build-config": [crate.annotation(
+            build_script_data = [
+                "@python_3_11//:files",
+                "@python_3_11//:python3",
+            ],
+            build_script_env = {
+                "PYO3_PYTHON": "$(execpath @python_3_11//:python3)",
+            },
+        )],
+    },
+    packages = {
+        "pyo3": crate.spec(version = "0.19.2"),
+        "rayon": crate.spec(version = "1"),
+        "uniffi": crate.spec(version = "0.27.3"),
+    },
+    splicing_config = splicing_config(resolver_version = "2"),
+    render_config = render_config(
+        default_package_name = ""
+    ),
 )
+
+load("@crate_index//:defs.bzl", "crate_repositories")
 
 crate_repositories()
 
 ########## Python
 
+# 0.32.0 doesn't work on bazel 6: "undefined symbol CcInfo"
 http_archive(
     name = "rules_python",
-    sha256 = "5868e73107a8e85d8f323806e60cad7283f34b32163ea6ff1020cf27abef6036",
-    strip_prefix = "rules_python-0.25.0",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.25.0/rules_python-0.25.0.tar.gz",
+    sha256 = "c68bdc4fbec25de5b5493b8819cfc877c4ea299c0dcb15c244c5a00208cde311",
+    strip_prefix = "rules_python-0.31.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.31.0/rules_python-0.31.0.tar.gz",
 )
 
 load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
